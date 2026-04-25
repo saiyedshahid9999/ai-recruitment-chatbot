@@ -1,0 +1,981 @@
+﻿@{
+    ViewData["Title"] = "Chat";
+}
+
+@section Styles {
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+    <link href="~/css/site.css" rel="stylesheet" />
+
+    <style>
+        :root {
+            --primary-color: #667eea;
+            --primary-dark: #5a67d8;
+            --secondary-color: #f093fb;
+            --accent-color: #4facfe;
+            --success-color: #48bb78;
+            --warning-color: #ed8936;
+            --danger-color: #f56565;
+            --dark-color: #2d3748;
+            --light-color: #f7fafc;
+            --white: #ffffff;
+            --gray-50: #f9fafb;
+            --gray-100: #f3f4f6;
+            --gray-200: #e5e7eb;
+            --gray-300: #d1d5db;
+            --gray-400: #9ca3af;
+            --gray-500: #6b7280;
+            --gray-600: #4b5563;
+            --gray-700: #374151;
+            --gray-800: #1f2937;
+            --gray-900: #111827;
+            --gradient-bg: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --message-gradient: linear-gradient(135deg, #667eea 0%, #f093fb 100%);
+            --bot-gradient: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            --card-gradient: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%);
+            --border-radius: 16px;
+            --border-radius-lg: 24px;
+            --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+            --shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.1);
+            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
+            --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--gradient-bg);
+            min-height: 100vh;
+            overflow: hidden;
+        }
+
+        .chat-container {
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            max-width: 100%;
+            margin: 0 auto;
+            background: var(--white);
+            position: relative;
+            animation: slideIn 0.5s ease-out;
+        }
+
+        .webcam-container {
+            display: none;
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            width: 320px;
+            max-width: 100%;
+            background: var(--gray-900);
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow-lg);
+            padding: 10px;
+            z-index: 1000;
+        }
+
+            .webcam-container.active {
+                display: block;
+            }
+
+        .webcam-video {
+            width: 100%;
+            border-radius: var(--border-radius);
+            background: black;
+        }
+
+        .webcam-controls {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .id-proof-btn {
+            background: var(--warning-color);
+            color: var(--white);
+            padding: 0.75rem 1.25rem;
+            border-radius: 25px;
+            font-size: 0.875rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            white-space: nowrap;
+            border: none;
+        }
+
+            .id-proof-btn:hover {
+                background: darken(var(--warning-color), 10%);
+                transform: translateY(-2px);
+                box-shadow: var(--shadow-lg);
+            }
+
+        .webcam-btn {
+            background: var(--primary-color);
+            color: var(--white);
+            border: none;
+            padding: 8px 16px;
+            border-radius: var(--border-radius);
+            cursor: pointer;
+            font-size: 14px;
+            transition: background 0.3s;
+        }
+
+            .webcam-btn:hover {
+                background: var(--primary-dark);
+            }
+
+            .webcam-btn:disabled {
+                background: var(--gray-400);
+                cursor: not-allowed;
+            }
+    </style>
+}
+
+<div class="chat-container">
+    <!-- Webcam Container -->
+    <div class="webcam-container" id="webcamContainer">
+        <video class="webcam-video" id="webcamVideo" autoplay muted></video>
+        <div class="webcam-controls">
+            <button class="webcam-btn" id="captureIDButton" onclick="captureIDProof()">Capture ID Proof</button>
+        </div>
+    </div>
+
+    <!-- Header -->
+    <div class="chat-header">
+        <div class="header-left">
+            <div class="header-avatar">
+                <i class="fas fa-robot"></i>
+            </div>
+            <div class="header-info">
+                <h1>AI</h1>
+                <p>Your intelligent company assistant</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="quick-actions">
+        <button class="quick-btn" onclick="sendQuickMessage('How can I contact to this company?')">
+            <i class="fas fa-phone"></i>
+            <span>Contact</span>
+        </button>
+        <button class="quick-btn" onclick="sendQuickMessage('Tell me about this company.')">
+            <i class="fas fa-info-circle"></i>
+            <span>About</span>
+        </button>
+        <button class="quick-btn" onclick="sendQuickMessage('Which industries does this company serve?')">
+            <i class="fas fa-industry"></i>
+            <span>Industries</span>
+        </button>
+        <button class="quick-btn" onclick="sendQuickMessage('What services does this company provide?')">
+            <i class="fas fa-cogs"></i>
+            <span>Services</span>
+        </button>
+        <button class="quick-btn" onclick="sendQuickMessage('What products does this company offer?')">
+            <i class="fas fa-box"></i>
+            <span>Products</span>
+        </button>
+        <button class="quick-btn" onclick="sendQuickMessage('I want to apply for a job in this company.')">
+            <i class="fas fa-briefcase"></i>
+            <span>Jobs</span>
+        </button>
+    </div>
+
+    <!-- Messages Area -->
+    <div class="messages-container" id="messagesContainer">
+        <div class="messages-list" id="messagesList">
+            <div class="welcome-screen" id="welcomeScreen">
+                <div class="welcome-icon">
+                    <i class="fas fa-robot"></i>
+                </div>
+                <h2 class="welcome-title">Welcome to our AI</h2>
+                <p class="welcome-subtitle">I'm here to help you with information about our company, services, products, or job openings. You can also upload your resume to find matching opportunities!</p>
+                <div class="welcome-suggestions">
+                    <div class="suggestion-card" onclick="sendQuickMessage('Tell me about your products')">
+                        <div class="suggestion-icon"><i class="fas fa-box"></i></div>
+                        <div class="suggestion-title">Our Products</div>
+                        <div class="suggestion-desc">Discover our innovative product solutions</div>
+                    </div>
+                    <div class="suggestion-card" onclick="sendQuickMessage('Where are you located?')">
+                        <div class="suggestion-icon"><i class="fas fa-map-marker-alt"></i></div>
+                        <div class="suggestion-title">Our Location</div>
+                        <div class="suggestion-desc">Find our office locations and contact details</div>
+                    </div>
+                    <div class="suggestion-card" onclick="sendQuickMessage('What job openings do you have?')">
+                        <div class="suggestion-icon"><i class="fas fa-briefcase"></i></div>
+                        <div class="suggestion-title">Career Opportunities</div>
+                        <div class="suggestion-desc">Browse available positions and join our team</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="typing-indicator" id="typingIndicator">
+                <div class="message-avatar">
+                    <i class="fas fa-robot"></i>
+                </div>
+                <div class="typing-bubble">
+                    <div class="typing-dot"></div>
+                    <div class="typing-dot"></div>
+                    <div class="typing-dot"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Input Area -->
+    <!-- Input Area -->
+    <div class="chat-input">
+        <div class="input-wrapper">
+            <textarea class="message-input" id="messageInput" placeholder="Type your message..." rows="1" oninput="autoResize(this)" onkeypress="handleKeyPress(event)"></textarea>
+            <div class="input-actions">
+                <button class="input-btn voice-btn" id="micButton" title="Start Speech Recognition" onclick="startSpeechRecognition()">
+                    <i class="fas fa-microphone"></i>
+                </button>
+                <button class="upload-btn" onclick="triggerResumeInput()">
+                    <i class="fas fa-paperclip"></i> Resume
+                </button>
+                <button class="upload-btn id-proof-btn" id="idProofUploadBtn" onclick="handleIDProofUpload()" style="display: none;">
+                    <i class="fas fa-id-card"></i> ID Proof
+                </button>
+                <input type="file" id="resumeInput" accept=".pdf,.docx" style="display: none;" />
+                <input type="file" id="idProofInput" accept=".jpg,.jpeg,.png,.pdf" style="display: none;" />
+                <button class="input-btn send-btn" id="sendButton" title="Send Message" onclick="sendMessage()">
+                    <i class="fas fa-paper-plane"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+        // ====== State ======
+        let recognition = null;
+        let isRecording = false;
+        let webcamStream = null;
+        let isWebcamActive = false;
+        let isInterviewActive = sessionStorage.getItem('isInterviewActive') === 'true' || false;
+        let mediaRecorder = null;
+        let recordedChunks = [];
+        let hasPendingUpload = false;
+        let lastTabSwitchTime = null;
+
+        // ====== Speech to Text (unchanged) ======
+        if (SpeechRecognition) {
+          recognition = new SpeechRecognition();
+          recognition.continuous = false;
+          recognition.interimResults = true;
+          recognition.lang = 'en-US';
+
+          recognition.onresult = function (event) {
+            let interimTranscript = '';
+            let finalTranscript = '';
+            for (let i = event.resultIndex; i < event.results.length; i++) {
+              const transcript = event.results[i][0].transcript;
+              if (event.results[i].isFinal) finalTranscript += transcript;
+              else interimTranscript += transcript;
+            }
+            const messageInput = document.getElementById('messageInput');
+            messageInput.value = finalTranscript || interimTranscript;
+            autoResize(messageInput);
+          };
+
+          recognition.onend = function () {
+            isRecording = false;
+            const micButton = document.getElementById('micButton');
+            if (micButton) {
+              micButton.classList.remove('recording');
+              micButton.title = 'Start Speech Recognition';
+            }
+          };
+
+          recognition.onerror = function (event) {
+            console.error('Speech recognition error:', event.error);
+            isRecording = false;
+            const micButton = document.getElementById('micButton');
+            if (micButton) {
+              micButton.classList.remove('recording');
+              micButton.title = 'Start Speech Recognition';
+            }
+            alert('Speech recognition error: ' + event.error);
+          };
+        }
+
+        // ====== Helpers ======
+        function updateInterviewState(state) {
+          isInterviewActive = state;
+          sessionStorage.setItem('isInterviewActive', state);
+        }
+
+        function appendMessage(sender, content) {
+          const messagesList = document.getElementById('messagesList');
+          const typingIndicator = document.getElementById('typingIndicator');
+          const messageDiv = document.createElement('div');
+          messageDiv.className = `message ${sender}`;
+          messageDiv.innerHTML = `
+            <div class="message-avatar"><i class="fas fa-${sender === 'bot' ? 'robot' : 'user'}"></i></div>
+            <div class="message-content">
+              <div class="message-bubble">${content}</div>
+              <div class="message-time">${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
+            </div>`;
+          messagesList.insertBefore(messageDiv, typingIndicator);
+          const messagesContainer = document.getElementById('messagesContainer');
+          messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }
+
+        function appendWebcamErrorMessage(error) {
+          const errorMessage = error
+            ? `❌ Webcam error: ${error.name} - ${error.message}. Please grant permission and check your webcam.`
+            : '❌ Unable to access webcam. Please grant permission and ensure a working webcam.';
+          appendMessage('bot', errorMessage);
+        }
+
+        function autoResize(textarea) {
+          textarea.style.height = 'auto';
+          textarea.style.height = `${textarea.scrollHeight}px`;
+        }
+
+        // ====== Recording control (unchanged) ======
+        function canRecord() {
+          return !!(webcamStream && MediaRecorder && typeof MediaRecorder === 'function');
+        }
+
+                // In Index.cshtml, update the startRecording function to log the session context
+        function startRecording() {
+            if (!isInterviewActive) return;
+            if (!canRecord()) return;
+            if (mediaRecorder && mediaRecorder.state !== 'inactive') return;
+
+            recordedChunks = [];
+            hasPendingUpload = false;
+
+            try {
+                mediaRecorder = new MediaRecorder(webcamStream, { mimeType: 'video/webm' });
+
+                mediaRecorder.ondataavailable = (event) => {
+                    if (event.data && event.data.size > 0) recordedChunks.push(event.data);
+                };
+
+                mediaRecorder.onstop = () => {
+                    if (hasPendingUpload) return;
+                    hasPendingUpload = true;
+
+                    const blob = new Blob(recordedChunks, { type: 'video/webm' });
+                    const formData = new FormData();
+                    formData.append('video', blob, `interview-${Date.now()}.webm`);
+
+                    $.ajax({
+                        url: '/Chat/UploadInterviewVideo',
+                        type: 'POST',
+                        data: formData,
+                        processData: false,
+                        contentType: false,
+                        success: (response) => {
+                            console.log('Video uploaded:', response);
+                            if (response.success) {
+                                const link = response?.fileName
+                                    ? `<a href="/Chat/ViewInterviewVideo?fileName=${response.fileName}" target="_blank">View Video</a>`
+                                    : '';
+                                appendMessage('bot', `🎥 Video recorded and saved. ${link}`);
+                            } else {
+                                appendMessage('bot', `❌ ${response.message}`);
+                            }
+                        },
+                        error: (xhr) => {
+                            console.error('Video upload failed', xhr?.status, xhr?.responseText);
+                            appendMessage('bot', '❌ Error saving video. Please try again.');
+                        }
+                    });
+                };
+
+                mediaRecorder.start();
+                console.log('MediaRecorder started for interview session');
+            } catch (err) {
+                console.error('Failed to start MediaRecorder', err);
+                appendMessage('bot', '❌ Unable to start recording. Please ensure your browser supports MediaRecorder.');
+            }
+        }
+
+        function stopRecordingAndUpload(reason = '') {
+          if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+            console.log('Stopping recorder. Reason:', reason);
+            try { mediaRecorder.stop(); } catch (e) { console.warn('mediaRecorder.stop failed', e); }
+          }
+        }
+
+        // ====== Webcam control (unchanged) ======
+        async function startWebcam() {
+          console.log('Starting webcam...');
+          if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+            console.error('getUserMedia not supported in this browser');
+            appendWebcamErrorMessage(new Error('Webcam not supported'));
+            return;
+          }
+
+          try {
+            if (!webcamStream) {
+              webcamStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+            }
+
+            const videoElement = document.getElementById('webcamVideo');
+            if (videoElement) videoElement.srcObject = webcamStream;
+
+            const webcamContainer = document.getElementById('webcamContainer');
+            if (webcamContainer) webcamContainer.classList.add('active');
+
+            const captureBtn = document.getElementById('captureIDButton');
+            if (captureBtn) captureBtn.disabled = false;
+
+            isWebcamActive = true;
+            console.log('Webcam active');
+
+            if (isInterviewActive) startRecording();
+          } catch (error) {
+            console.error('Webcam error:', error.name, error.message);
+            appendWebcamErrorMessage(error);
+            isWebcamActive = false;
+          }
+        }
+
+        function stopWebcam() {
+          stopRecordingAndUpload('webcam-stop');
+
+          if (webcamStream) {
+            try {
+              webcamStream.getTracks().forEach(t => t.stop());
+            } catch {}
+            webcamStream = null;
+          }
+          const videoElement = document.getElementById('webcamVideo');
+          if (videoElement) videoElement.srcObject = null;
+
+          const webcamContainer = document.getElementById('webcamContainer');
+          if (webcamContainer) webcamContainer.classList.remove('active');
+
+          const captureBtn = document.getElementById('captureIDButton');
+          if (captureBtn) captureBtn.disabled = true;
+
+          isWebcamActive = false;
+          console.log('Webcam stopped');
+        }
+
+        // ====== ID Proof Handling (unchanged) ======
+        function handleIDProofUpload() {
+          const choice = confirm('Would you like to capture your ID using the webcam or upload an existing file? Click "OK" for webcam capture or "Cancel" to upload a file.');
+          if (choice) {
+            captureIDProof();
+          } else {
+            triggerIDProofInput();
+          }
+        }
+
+        function captureIDProof() {
+          if (!webcamStream) {
+            alert('Webcam is not active. Starting webcam...');
+            startWebcam();
+            return;
+          }
+          const videoElement = document.getElementById('webcamVideo');
+          const canvas = document.createElement('canvas');
+          canvas.width = videoElement.videoWidth;
+          canvas.height = videoElement.videoHeight;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(videoElement, 0, 0, canvas.width, canvas.height);
+
+          canvas.toBlob(function (blob) {
+            const formData = new FormData();
+            formData.append('idProof', blob, `id-proof-${Date.now()}.jpg`);
+
+            appendMessage('user', '📷 Captured ID proof');
+            const typingIndicator = document.getElementById('typingIndicator');
+            typingIndicator.style.display = 'flex';
+
+            $.ajax({
+              url: '/Chat/UploadIDProof',
+              type: 'POST',
+              data: formData,
+              processData: false,
+              contentType: false,
+              success: function (response) {
+                typingIndicator.style.display = 'none';
+                if (response.success) {
+                  appendMessage('bot', response.response);
+
+                  if (response.startInterview) {
+                    updateInterviewState(true);
+                    if (!isWebcamActive) startWebcam();
+                    else startRecording();
+                  } else if (['interview_limit_exceeded', 'retry_limit_exceeded', 'no_job_selected'].includes(response.reason)) {
+                    updateInterviewState(false);
+                    stopWebcam();
+                  }
+                } else {
+                  let errorMessage = response.message;
+                  if (response.reason === 'no_file') errorMessage = 'No ID proof was uploaded. Please capture the photo again.';
+                  else if (response.reason === 'interview_limit_exceeded' || response.reason === 'retry_limit_exceeded') {
+                    errorMessage = response.message;
+                    updateInterviewState(false);
+                    stopWebcam();
+                  } else if (response.reason === 'no_job_selected') {
+                    errorMessage = 'No job selected. Please start the application process again.';
+                    updateInterviewState(false);
+                    stopWebcam();
+                  } else if (response.reason === 'exception') {
+                    errorMessage = 'An error occurred while processing the ID proof. Please try again or contact support.';
+                  }
+                  appendMessage('bot', errorMessage);
+                  if (!isInterviewActive) stopWebcam();
+                }
+              },
+              error: function () {
+                typingIndicator.style.display = 'none';
+                appendMessage('bot', '❌ Error uploading ID proof. Please try again.');
+              }
+            });
+          }, 'image/jpeg', 1.0);
+        }
+
+        // ====== Resume upload (unchanged) ======
+        document.getElementById('resumeInput')?.addEventListener('change', function (event) {
+          const file = event.target.files[0];
+          if (!file) return;
+          const validExtensions = ['.pdf', '.docx'];
+          const maxSize = 5 * 1024 * 1024;
+          const extension = file.name.substring(file.name.lastIndexOf('.')).toLowerCase();
+
+          if (!validExtensions.includes(extension)) {
+            alert('Please upload a PDF or Word (.docx) file.');
+            event.target.value = '';
+            return;
+          }
+          if (file.size > maxSize) {
+            alert('File size exceeds 5MB. Please upload a smaller file.');
+            event.target.value = '';
+            return;
+          }
+
+          const welcomeScreen = document.getElementById('welcomeScreen');
+          if (welcomeScreen) welcomeScreen.style.display = 'none';
+
+          appendMessage('user', `📄 Uploaded resume: ${file.name}`);
+
+          const typingIndicator = document.getElementById('typingIndicator');
+          typingIndicator.style.display = 'flex';
+
+          const formData = new FormData();
+          formData.append('resume', file);
+          $.ajax({
+            url: '/Chat/UploadResume',
+            type: 'POST',
+            data: formData,
+            processData: false,
+            contentType: false,
+            success: function (response) {
+              typingIndicator.style.display = 'none';
+              appendMessage('bot', response.response);
+              event.target.value = '';
+            },
+            error: function () {
+              typingIndicator.style.display = 'none';
+              appendMessage('bot', '❌ Error uploading resume.');
+              event.target.value = '';
+            }
+          });
+        });
+
+        // ====== ID Proof File Upload (unchanged) ======
+        document.getElementById('idProofInput')?.addEventListener('change', function (event) {
+          const file = event.target.files[0];
+          if (!file) return;
+
+          const validExtensions = ['.jpg', '.jpeg', '.png', '.pdf'];
+          const maxSize = 5 * 1024 * 1024;
+          const extension = file.name.substring(file.name.lastIndexOf('.')).toLowerCase();
+
+          if (!validExtensions.includes(extension)) {
+            alert('Please upload a JPG, PNG, or PDF file.');
+            event.target.value = '';
+            return;
+          }
+          if (file.size > maxSize) {
+            alert('File size exceeds 5MB. Please upload a smaller file.');
+            event.target.value = '';
+            return;
+          }
+
+          const welcomeScreen = document.getElementById('welcomeScreen');
+          if (welcomeScreen) welcomeScreen.style.display = 'none';
+
+          appendMessage('user', `📷 Uploaded ID proof: ${file.name}`);
+
+          const typingIndicator = document.getElementById('typingIndicator');
+          typingIndicator.style.display = 'flex';
+
+          const formData = new FormData();
+          formData.append('idProof', file);
+
+          $.ajax({
+            url: '/Chat/UploadIDProof',
+            type: 'POST',
+            data: formData,
+            processData: false,
+            contentType: false,
+            success: function (response) {
+              typingIndicator.style.display = 'none';
+              if (response.success) {
+                appendMessage('bot', response.response);
+                if (response.startInterview) {
+                  updateInterviewState(true);
+                  if (!isWebcamActive) startWebcam();
+                  else startRecording();
+                } else if (['interview_limit_exceeded', 'retry_limit_exceeded', 'no_job_selected'].includes(response.reason)) {
+                  updateInterviewState(false);
+                  stopWebcam();
+                }
+                document.getElementById('idProofUploadBtn').style.display = 'none';
+              } else {
+                let errorMessage = response.message;
+                if (response.reason === 'no_file') errorMessage = 'No ID proof was uploaded. Please upload again.';
+                else if (response.reason === 'file_too_large') errorMessage = 'File size exceeds 5MB. Please upload a smaller file.';
+                else if (response.reason === 'invalid_format') errorMessage = 'Invalid file format. Please upload a JPG, PNG, or PDF file.';
+                else if (response.reason === 'interview_limit_exceeded' || response.reason === 'retry_limit_exceeded') {
+                  errorMessage = response.message;
+                  updateInterviewState(false);
+                  stopWebcam();
+                } else if (response.reason === 'no_job_selected') {
+                  errorMessage = 'No job selected. Please start the application process again.';
+                  updateInterviewState(false);
+                  stopWebcam();
+                } else if (response.reason === 'exception') {
+                  errorMessage = 'An error occurred while processing the ID proof. Please try again.';
+                }
+                appendMessage('bot', errorMessage);
+                if (!isInterviewActive && !isWebcamActive) startWebcam();
+              }
+              event.target.value = null;
+            },
+            error: function () {
+              typingIndicator.style.display = 'none';
+              appendMessage('bot', '❌ Error uploading ID proof. Please try again.');
+              if (!isWebcamActive) startWebcam();
+              event.target.value = null;
+            }
+          });
+        });
+
+               // Update the sendMessage function to stop recording before submitting
+        function sendMessage() {
+            const input = document.getElementById('messageInput');
+            const message = input.value.trim();
+            if (!message) return;
+
+            if (isInterviewActive && !isWebcamActive) {
+                console.log('Interview active, but webcam is off. Starting webcam...');
+                appendMessage('bot', '⚠️ Webcam is required for the interview. Starting webcam now...');
+                startWebcam();
+                return;
+            }
+
+            const welcomeScreen = document.getElementById('welcomeScreen');
+            if (welcomeScreen) welcomeScreen.style.display = 'none';
+
+            appendMessage('user', message);
+
+            const typingIndicator = document.getElementById('typingIndicator');
+            typingIndicator.style.display = 'flex';
+
+            $.ajax({
+                url: '/Chat/SendMessage',
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({ userMessage: message }),
+                success: function (response) {
+                    typingIndicator.style.display = 'none';
+                    appendMessage('bot', response.response);
+
+                    const idProofBtn = document.getElementById('idProofUploadBtn');
+
+                    if (response.response.includes('Please upload a clear photo or PDF of your government-issued ID')) {
+                        if (idProofBtn) idProofBtn.style.display = 'inline-block';
+                        if (!isWebcamActive) startWebcam();
+                    } else if (idProofBtn) {
+                        idProofBtn.style.display = 'none';
+                    }
+
+                    if (response.startInterview) {
+                        updateInterviewState(true);
+                        if (!isWebcamActive) startWebcam();
+                        else startRecording();
+                    }
+
+                    if (response.response.includes('interview will not start') ||
+                        response.response.includes('Thank you for completing the interview') ||
+                        response.response.includes('Your first interview for') ||
+                        response.response.includes('Your retake interview for')) {
+                        stopRecordingAndUpload('interview-complete');
+                        updateInterviewState(false);
+                        if (idProofBtn) idProofBtn.style.display = 'none';
+                        setTimeout(() => stopWebcam(), 300);
+                    }
+                },
+                error: function () {
+                    typingIndicator.style.display = 'none';
+                    appendMessage('bot', '❌ Error processing message. Please try again.');
+                    if (isInterviewActive && !isWebcamActive) startWebcam();
+                }
+            });
+
+            input.value = '';
+            autoResize(input);
+        }
+
+        // ====== File inputs (unchanged) ======
+        function triggerResumeInput() { document.getElementById('resumeInput').click(); }
+        function triggerIDProofInput() { document.getElementById('idProofInput').click(); }
+
+        // ====== Copy-Paste Detection ======
+        function sendCopyPasteEvent(type, content) {
+            $.ajax({
+                url: '/Chat/GetInterviewStatus',
+                type: 'GET',
+                success: function (response) {
+                    if (response.isInterviewActive) {
+                        $.ajax({
+                            url: '/Chat/RecordCopyPasteEvent',
+                            type: 'POST',
+                            contentType: 'application/json',
+                            data: JSON.stringify({ type: type, content: content || '' }),
+                            success: function (response) {
+                                if (response.success) {
+                                    console.log(`${type} event recorded successfully`);
+                                } else {
+                                    console.warn(`Failed to record ${type} event:`, response.message);
+                                }
+                            },
+                            error: function () {
+                                console.error(`Error recording ${type} event`);
+                            }
+                        });
+                    }
+                },
+                error: function () {
+                    console.error('Error checking interview status for copy-paste event');
+                }
+            });
+        }
+
+        document.addEventListener('copy', function (e) {
+            const selectedText = window.getSelection().toString();
+            if (selectedText) {
+                sendCopyPasteEvent('copy', selectedText);
+            }
+        });
+
+        document.addEventListener('paste', function (e) {
+            const pastedText = (e.clipboardData || window.clipboardData).getData('text');
+            if (pastedText) {
+                sendCopyPasteEvent('paste', pastedText);
+            }
+        });
+
+        //         // ====== Screenshot Detection ======
+        // function sendScreenshotEvent() {
+        //     console.log('Attempting to send screenshot event'); // Debug log
+        //     $.ajax({
+        //         url: '/Chat/GetInterviewStatus',
+        //         type: 'GET',
+        //         success: function (response) {
+        //             console.log('Interview status response:', response); // Debug log
+        //             if (response.isInterviewActive) {
+        //                 $.ajax({
+        //                     url: '/Chat/RecordScreenshotEvent',
+        //                     type: 'POST',
+        //                     contentType: 'application/json',
+        //                     data: JSON.stringify({}),
+        //                     success: function (response) {
+        //                         if (response.success) {
+        //                             console.log('Screenshot event recorded successfully');
+        //                         } else {
+        //                             console.warn('Failed to record screenshot event:', response.message);
+        //                         }
+        //                     },
+        //                     error: function (xhr, status, error) {
+        //                         console.error('Error recording screenshot event:', status, error);
+        //                     }
+        //                 });
+        //             } else {
+        //                 console.log('Screenshot event not sent: Interview is not active');
+        //             }
+        //         },
+        //         error: function (xhr, status, error) {
+        //             console.error('Error checking interview status for screenshot event:', status, error);
+        //         }
+        //     });
+        // }
+
+        // document.addEventListener('keydown', function (e) {
+        //     const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
+        //     const screenshotKeys = [
+        //         e.key === 'PrintScreen' || e.key === 'PrtSc' || e.key === 'Print', // Handle variations
+        //         (e.ctrlKey && e.shiftKey && (e.key === 's' || e.key === 'S')), // Windows/Linux screenshot tools
+        //         (isMac && e.metaKey && e.shiftKey && (e.key === '3' || e.key === '4')) // macOS screenshots
+        //     ];
+        //     if (screenshotKeys.some(key => key)) {
+        //         console.log('Screenshot key detected:', e.key); // Debug log
+        //         sendScreenshotEvent();
+        //     }
+        // });
+
+        // ====== Tab Switch with Duration ======
+        document.addEventListener('visibilitychange', function () {
+            if (document.hidden) {
+                lastTabSwitchTime = Date.now();
+                $.ajax({
+                    url: '/Chat/GetInterviewStatus',
+                    type: 'GET',
+                    success: function (response) {
+                        if (response.isInterviewActive) {
+                            console.log('Tab switch started');
+                        }
+                    },
+                    error: function () {
+                        console.error('Error checking interview status');
+                    }
+                });
+            } else {
+                if (lastTabSwitchTime) {
+                    const duration = (Date.now() - lastTabSwitchTime) / 1000; // Duration in seconds
+                    $.ajax({
+                        url: '/Chat/GetInterviewStatus',
+                        type: 'GET',
+                        success: function (response) {
+                            if (response.isInterviewActive) {
+                                $.ajax({
+                                    url: '/Chat/RecordTabSwitchEvent',
+                                    type: 'POST',
+                                    contentType: 'application/json',
+                                    data: JSON.stringify({ duration: duration }),
+                                    success: function (response) {
+                                        if (response.success) {
+                                            console.log(`Tab switch recorded with duration ${duration}s`);
+                                        } else {
+                                            console.warn('Failed to record tab switch:', response.message);
+                                        }
+                                    },
+                                    error: function () {
+                                        console.error('Error recording tab switch');
+                                        let retries = 0;
+                                        const maxRetries = 3;
+                                        const retryDelay = 1000;
+                                        function retryTabSwitch() {
+                                            if (retries < maxRetries) {
+                                                retries++;
+                                                setTimeout(() => {
+                                                    $.ajax({
+                                                        url: '/Chat/RecordTabSwitchEvent',
+                                                        type: 'POST',
+                                                        contentType: 'application/json',
+                                                        data: JSON.stringify({ duration: duration }),
+                                                        success: function (response) {
+                                                            if (response.success) {
+                                                                console.log(`Tab switch recorded on retry ${retries}`);
+                                                            } else {
+                                                                console.warn('Retry failed:', response.message);
+                                                            }
+                                                        },
+                                                        error: function () {
+                                                            console.error(`Retry ${retries} failed`);
+                                                            if (retries < maxRetries) {
+                                                                setTimeout(retryTabSwitch, retryDelay * Math.pow(2, retries));
+                                                            }
+                                                        }
+                                                    });
+                                                }, retryDelay * Math.pow(2, retries));
+                                            }
+                                        }
+                                        retryTabSwitch();
+                                    }
+                                });
+                            }
+                        },
+                        error: function () {
+                            console.error('Error checking interview status');
+                        }
+                    });
+                    lastTabSwitchTime = null;
+                }
+            }
+        });
+
+        // ====== Page lifecycle (unchanged) ======
+        window.addEventListener('beforeunload', function (event) {
+          if (isInterviewActive) {
+            stopRecordingAndUpload('page-unload');
+            event.preventDefault();
+            event.returnValue = 'You are in the middle of an interview. Refreshing the page will interrupt it. Are you sure you want to continue?';
+          }
+        });
+
+        document.addEventListener('DOMContentLoaded', function () {
+          if (isInterviewActive) {
+            console.log('Interview active on page load, fetching current state...');
+            $.ajax({
+              url: '/Chat/GetInterviewStatus',
+              type: 'GET',
+              success: function (response) {
+                if (response.isInterviewActive) {
+                  updateInterviewState(true);
+                  if (response.currentQuestion) {
+                    appendMessage('bot', response.currentQuestion);
+                    const welcomeScreen = document.getElementById('welcomeScreen');
+                    if (welcomeScreen) welcomeScreen.style.display = 'none';
+                  }
+                  if (!isWebcamActive) startWebcam();
+                  else startRecording();
+                } else {
+                  updateInterviewState(false);
+                  stopWebcam();
+                }
+              },
+              error: function () {
+                console.error('Error fetching interview status');
+                updateInterviewState(false);
+                stopWebcam();
+                appendMessage('bot', '❌ Error retrieving interview status. Please start the application process again.');
+              }
+            });
+          }
+        });
+
+        // ====== UI helpers (unchanged) ======
+        function handleKeyPress(event) { if (event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); sendMessage(); } }
+        function sendQuickMessage(message) { document.getElementById('messageInput').value = message; sendMessage(); }
+        function clearChat() {
+          if (isInterviewActive) { console.log('Interview active, keeping webcam on'); return; }
+          updateInterviewState(false);
+          stopWebcam();
+          const messagesList = document.getElementById('messagesList');
+          messagesList.innerHTML = `... your existing welcome HTML ...`;
+          document.getElementById('messageInput').value = '';
+          autoResize(document.getElementById('messageInput'));
+        }
+
+        // Expose functions used by buttons
+        window.sendMessage = sendMessage;
+        window.captureIDProof = captureIDProof;
+        window.triggerResumeInput = triggerResumeInput;
+        window.triggerIDProofInput = triggerIDProofInput;
+        window.handleIDProofUpload = handleIDProofUpload;
+    </script>
+}
